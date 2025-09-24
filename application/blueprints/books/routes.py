@@ -17,13 +17,28 @@ def create_book():
     db.session.commit()
     return book_schema.jsonify(new_book), 201
 
-#GET ALL BOOKS
+# #GET ALL BOOKS
+# @books_bp.route("/", methods=['GET'])
+# def get_books():
+#     query = select(Book)
+#     books = db.session.execute(query).scalars().all()
+    
+#     return books_schema.jsonify(books)
+
 @books_bp.route("/", methods=['GET'])
 def get_books():
-    query = select(Book)
-    books = db.session.execute(query).scalars().all()
+    try:
+        page = int(request.args.get('page'))
+        per_page = int(request.args.get('per_page'))
+        query = select(Book)
+        books = db.paginate(query, page=page, per_page=per_page)
+        return books_schema.jsonify(books), 200
+    except:
+     query = select(Book)
+     books = db.session.execute(query).scalars().all()
     
-    return books_schema.jsonify(books)
+     return books_schema.jsonify(books), 200
+
 
 #GET SPECIFIC BOOK
 @books_bp.route("/<int:book_id>", methods=['GET'])
@@ -64,3 +79,23 @@ def delete_book(book_id):
     db.session.delete(book)
     db.session.commit()
     return jsonify({"message": f'Book id: {book_id}, successfully deleted.'}), 200
+
+
+@books_bp.route("/popular", methods=['GET'])
+def popular_books():
+    query = select(Book)
+    books = db.session.execute(query).scalars().all()
+    
+    books.sort(key= lambda book: len(book.loans), reverse=True)
+    
+    return books_schema.jsonify(books)
+
+
+@books_bp.route("/search", methods=['GET'])
+def search_book():
+    title = request.args.get("title")
+    
+    query = select(Book).where(Book.title.like(f'%{title}%'))
+    books = db.session.execute(query).scalars().all()
+    
+    return books_schema.jsonify(books)

@@ -30,6 +30,7 @@ class Member(Base):
     password: Mapped[str] = mapped_column(db.String(255), nullable=False)
 
     loans: Mapped[List['Loan']] = db.relationship(back_populates='member')
+    orders: Mapped[List['Order']] = db.relationship(back_populates='member')
 
 class Loan(Base):
     __tablename__ = 'loans'
@@ -38,7 +39,7 @@ class Loan(Base):
     loan_date: Mapped[date] = mapped_column(db.Date)
     member_id: Mapped[int] = mapped_column(db.ForeignKey('members.id'))
     
-    member: Mapped['Member'] = db.relationship(back_populates='loan')
+    member: Mapped['Member'] = db.relationship(back_populates='loans')
     books: Mapped[List['Book']] = db.relationship(secondary=loan_book, back_populates='loans')
     
 class Book(Base):
@@ -51,3 +52,33 @@ class Book(Base):
     title: Mapped[str] = mapped_column(db.String(255), nullable=False)
     
     loans: Mapped[List['Loan']] = db.relationship(secondary=loan_book, back_populates='books')
+    
+class Item(Base):
+    __tablename__ = "items"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_name: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    price: Mapped[float] = mapped_column(db.Float(), nullable=False)
+    
+    order_items: Mapped[List["OrderItems"]] = db.relationship(back_populates = "item")
+    
+class Order(Base):
+    __tablename__ = "orders"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_date: Mapped[date] = mapped_column(nullable=False)
+    member_id: Mapped[int] = mapped_column(db.ForeignKey('members.id'), nullable=False)
+    
+    member: Mapped['Member'] = db.relationship(back_populates='orders')
+    order_items: Mapped[List["OrderItems"]] = db.relationship(back_populates = "order")
+    
+class OrderItems(Base):
+    __tablename__ = "order_items"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_id: Mapped[int] = mapped_column(db.ForeignKey("orders.id"), nullable=False)
+    item_id: Mapped[int] = mapped_column(db.ForeignKey("items.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(nullable=False)
+    
+    order: Mapped["Order"] = db.relationship(back_populates= "order_items")
+    item: Mapped["Item"] = db.relationship(back_populates= "order_items")

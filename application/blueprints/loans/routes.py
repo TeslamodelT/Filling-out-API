@@ -1,10 +1,11 @@
-from .schemas import loan_schema, loans_schema
+from .schemas import loan_schema, loans_schema, return_loan_schema, edit_loan_schema
 from flask import request, jsonify
 from marshmallow import ValidationError 
 from sqlalchemy import select 
 from application.models import Loan, Book, db
 from . import loans_bp
 from application.blueprints.books.schemas import books_schema
+from application.extensions import limiter
 
 @loans_bp.route("/", methods=['POST'])
 def create_loan():
@@ -73,6 +74,7 @@ def remove_book(loan_id,book_id):
 
 #DELETE SPECIFIC LOAN
 @loans_bp.route("/<int:loan_id>", methods=['DELETE'])
+@limiter.limit("10 per day") #limit request to 10 times per day
 def delete_loan(loan_id):
     loan = db.session.get(Loan, loan_id)
 
@@ -82,3 +84,31 @@ def delete_loan(loan_id):
     db.session.delete(loan)
     db.session.commit()
     return jsonify({"message": f'Loan id: {loan_id}, successfully deleted.'}), 200
+
+#UPDATE LOAN
+@loans_bp.route("/<int:loan_id>", methods=['PUT'])
+def edit_loan(loan_id):
+    try:
+        loan_edits = edit_loan_schema.load(request.json)
+    except ValidationError as e:
+        return jsonify(e.messages), 400
+    
+    query = select(Loan).where(Loan.id == loan_id)
+    loan = db.session.execute(query).scalars().first()
+    
+    for book_id in loan_edits['add_book_ids']:
+        query = select(Book).where(Book.id == book_id)
+        book = db.session.execute(query).scalars().first()
+        
+        if book and book not in loan.books:
+            loan.books.append(book)
+            
+    for book_id in loan_edits['remove_book_ids']:
+        query = select(Book).where(Book.id == book_id)
+        book = db.session.execute(query).scalars().first()
+        
+        if book and book in loan.books:
+            loan.books.remove(book)
+            
+    db.session.commit()
+    return return_loan_schema.jsonify(loan)
