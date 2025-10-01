@@ -1,3 +1,19 @@
+venv/
+__pycache__/
+.env
+
+
+
+
+
+
+
+
+
+
+
+
+
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column

@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime, date
-from app import create_app, db
+from flask_app import create_app, db
 from application.models import Member, Loan
 
 class TestLoan(unittest.TestCase):

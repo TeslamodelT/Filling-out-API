@@ -1,6 +1,6 @@
 import unittest
 from datetime import date, datetime
-from app import create_app, db
+from flask_app import create_app, db
 from application.models import Member, Order
 
 class TestOrder(unittest.TestCase):
